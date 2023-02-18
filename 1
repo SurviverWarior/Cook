@@ -1,0 +1,115 @@
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, Text, View, Image, TouchableOpacity, Animated, Easing } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+
+import CookieImage from './assets/cookie.png';
+
+export default function App() {
+  const [score, setScore] = useState(0);
+  const [cookies, setCookies] = useState([]);
+  const [cookieSize, setCookieSize] = useState(100);
+  const [cookieRotation, setCookieRotation] = useState(new Animated.Value(0));
+  const [powerUpTimeLeft, setPowerUpTimeLeft] = useState(0);
+
+  const handleCookiePress = () => {
+    setScore(score + (powerUpTimeLeft > 0 ? 2 : 1));
+    setCookies([...cookies, { id: Date.now(), size: cookieSize }]);
+  };
+
+  const handleResetPress = () => {
+    setScore(0);
+    setCookies([]);
+    setCookieSize(100);
+    setCookieRotation(new Animated.Value(0));
+    setPowerUpTimeLeft(0);
+  };
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      setPowerUpTimeLeft(Math.max(powerUpTimeLeft - 1, 0));
+    }, 1000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [powerUpTimeLeft]);
+
+  useEffect(() => {
+    if (powerUpTimeLeft === 0) {
+      setCookieSize(100);
+    }
+  }, [powerUpTimeLeft]);
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.timing(cookieRotation, {
+        toValue: 1,
+        duration: 10000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    ).start();
+  }, []);
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.scoreContainer}>
+        <MaterialCommunityIcons name="cookie" size={24} color="white" />
+        <Text style={styles.scoreText}>{score}</Text>
+        {powerUpTimeLeft > 0 && (
+          <Text style={styles.powerUpText}>{`Power-up: ${powerUpTimeLeft}s`}</Text>
+        )}
+      </View>
+      <View style={styles.cookieContainer}>
+        {cookies.map((cookie) => (
+          <Image
+            key={cookie.id}
+            source={CookieImage}
+            style={{
+              width: cookie.size,
+              height: cookie.size,
+              position: 'absolute',
+              top: Math.random() * 400,
+              left: Math.random() * 300,
+            }}
+          />
+        ))}
+        <TouchableOpacity onPress={handleCookiePress}>
+          <Animated.Image
+            source={CookieImage}
+            style={{
+              width: cookieSize,
+              height: cookieSize,
+              transform: [
+                {
+                  rotate: cookieRotation.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ['0deg', '360deg'],
+                  }),
+                },
+              ],
+            }}
+          />
+        </TouchableOpacity>
+      </View>
+      <TouchableOpacity style={styles.resetButton} onPress={handleResetPress}>
+        <Text style={styles.resetButtonText}>Reset</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: 'black',
+  },
+  scoreContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 20,
+    marginHorizontal: 20,
+  },
+  scoreText: {
+    color: 'white',
+    fontSize: 24
